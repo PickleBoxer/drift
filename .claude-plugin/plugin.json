@@ -1,6 +1,6 @@
 {
   "name": "drift",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Folder, branch, ahead/behind and uncommitted changes above the prompt, with a /drift pane for changes and branches",
   "author": {
     "name": "PickleBoxer"
