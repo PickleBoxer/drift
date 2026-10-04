@@ -1,0 +1,24 @@
+{
+  "name": "drift",
+  "version": "0.1.0",
+  "description": "Folder, branch, ahead/behind and uncommitted changes above the prompt, with a /drift pane for changes and branches",
+  "author": {
+    "name": "PickleBoxer"
+  },
+  "homepage": "https://github.com/PickleBoxer/drift",
+  "repository": "https://github.com/PickleBoxer/drift",
+  "license": "MIT",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "terminalIcons": {
+      "type": "string",
+      "title": "Terminal icons",
+      "description": "plain draws symbols that work in any font. nerd draws Nerd Font icons, which need a Nerd Font in your terminal.",
+      "options": [
+        "plain",
+        "nerd"
+      ],
+      "default": "plain"
+    }
+  }
+}
