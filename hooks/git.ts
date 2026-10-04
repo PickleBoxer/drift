@@ -166,6 +166,21 @@ export function since(then: number, now: number): string {
   return hours < 48 ? `${hours} h ago` : `${Math.round(hours / 24)} days ago`
 }
 
+// The owner and repository of a remote URL: scp-like SSH, ssh:// or https://
+export function parseRemote(url: string): { owner: string; name: string } | null {
+  const path = url
+    .trim()
+    .replace(/^[a-z+]+:\/\/[^/]+\//i, '')
+    .replace(/^[^@/:]+@[^:]+:/, '')
+    .replace(/\.git$/, '')
+    .replace(/\/+$/, '')
+  const parts = path.split('/').filter(Boolean)
+  const name = parts.pop()
+  const owner = parts.pop()
+
+  return owner && name && !url.startsWith('/') ? { owner, name } : null
+}
+
 export function basename(path: string): string {
   return path.replace(/\/+$/, '').split('/').pop() ?? path
 }

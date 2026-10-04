@@ -2,7 +2,7 @@ import type { On, RenderElement } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 
-import { countLines, parseBranches, parseNumstat, parseStatus, since } from '../hooks/git'
+import { countLines, parseBranches, parseNumstat, parseRemote, parseStatus, since } from '../hooks/git'
 
 const NOW = new Date(2026, 9, 4, 12, 0).getTime()
 const ROOT = '/Users/me/dev/project'
@@ -31,7 +31,7 @@ const BRANCHES = [
   ' \tspike\t\t\t5 weeks ago',
 ].join('\n')
 
-type Answers = { status?: string; isRepo?: boolean }
+type Answers = { status?: string; isRepo?: boolean; remote?: string }
 
 // Stands in for git, the file system and the session beneath the mod
 function seed(on: On, answers: Answers = {}): string[][] {
@@ -70,6 +70,10 @@ function seed(on: On, answers: Answers = {}): string[][] {
       const path = argv[argv.length - 1]
 
       return ok(argv.includes('--numstat') ? NUMSTAT : `diff --git a/${path} b/${path}\n+added ${path}\n-removed line\n`)
+    }
+
+    if (command === 'remote') {
+      return answers.remote ? ok(`${answers.remote}\n`) : { value: { exitCode: 2, stdout: '', stderr: 'No such remote', isStdoutTruncated: false, isStderrTruncated: false } }
     }
 
     if (command === 'for-each-ref') {
@@ -138,6 +142,16 @@ describe('git', () => {
     ])
   })
 
+  test('reads the owner and repository from every kind of remote URL', async () => {
+    const expected = { owner: 'PickleBoxer', name: 'drift' }
+
+    expect(parseRemote('git@github.com:PickleBoxer/drift.git')).toEqual(expected)
+    expect(parseRemote('git@github-PickleBoxer.com:PickleBoxer/drift.git')).toEqual(expected)
+    expect(parseRemote('https://github.com/PickleBoxer/drift')).toEqual(expected)
+    expect(parseRemote('ssh://git@gitlab.example.com:2222/PickleBoxer/drift.git')).toEqual(expected)
+    expect(parseRemote('/Users/me/backups/drift.git')).toBe(null)
+  })
+
   test('words how long ago a fetch was', async () => {
     expect(since(NOW - 20000, NOW)).toBe('just now')
     expect(since(NOW - 5 * 60000, NOW)).toBe('5 min ago')
@@ -162,6 +176,15 @@ describe('band', () => {
     expect(await ui.find({ type: 'Text', text: '+83' })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: '-1' })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: '❐' })).toBeDefined()
+  })
+
+  test('shows the owner and repository of the origin remote', async ($, on) => {
+    seed(on, { remote: 'git@github-PickleBoxer.com:PickleBoxer/dotfiles.git' })
+    await start($)
+    const ui = await $.ui.mount({ plugin: 'drift', surface: 'terminal', component: 'AbovePrompt', props: BAND })
+
+    expect(await ui.find({ type: 'Text', text: 'PickleBoxer/' })).toBeDefined()
+    expect(await ui.find({ type: 'Button', text: 'dotfiles' })).toBeDefined()
   })
 
   test('draws Nerd Font icons when asked', { options: { terminalIcons: 'nerd' } }, async ($, on) => {

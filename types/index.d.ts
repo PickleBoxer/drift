@@ -16,6 +16,8 @@ export type FileChange = {
 export type Repo = {
   root: string
   name: string
+  // The owner on the origin remote's host, such as a GitHub user or organization
+  owner: string | null
   // Null when HEAD is detached
   branch: string | null
   // Short commit id, null before the first commit

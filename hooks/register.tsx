@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { FileChange, Repo, Tab } from '../types'
-import { BRANCH_FORMAT, basename, countLines, parseBranches, parseNumstat, parseStatus, since, totals, withCounts } from './git'
+import { BRANCH_FORMAT, basename, countLines, parseBranches, parseNumstat, parseRemote, parseStatus, since, totals, withCounts } from './git'
 
 const PANE = 'drift'
 const TICK_MS = 5000
@@ -89,10 +89,13 @@ async function loadRepo($: EngineInterface): Promise<Repo | null> {
   }
 
   const files = withCounts(status.files, counts)
+  const origin = await git($, root, ['remote', 'get-url', 'origin'])
+  const remote = origin.ok ? parseRemote(origin.stdout) : null
 
   return {
     root,
-    name: basename(root),
+    name: remote?.name ?? basename(root),
+    owner: remote?.owner ?? null,
     branch: status.branch,
     commit: status.commit,
     upstream: status.upstream,
@@ -252,7 +255,7 @@ async function summary($: EngineInterface): Promise<string> {
     ? `${repo.files.length} changed file${repo.files.length === 1 ? '' : 's'}, +${repo.added} -${repo.deleted}`
     : 'working tree clean'
 
-  return `${repo.name} on ${head}${track}. ${changes}.`
+  return `${repo.owner ? `${repo.owner}/` : ''}${repo.name} on ${head}${track}. ${changes}.`
 }
 
 export const register: Register = (on, options) => {
@@ -438,7 +441,10 @@ export const register: Register = (on, options) => {
       <Box flexDirection="row" gap={2} paddingLeft={1}>
         <Box key="folder" flexDirection="row" gap={1}>
           <Text color="cyan">{icons.folder}</Text>
-          <Button key="folder" plain label={repo.name} onPress={() => void openFolder($)} />
+          <Box flexDirection="row">
+            {repo.owner && !isCompact && <Text dimColor>{repo.owner}/</Text>}
+            <Button key="folder" plain label={repo.name} onPress={() => void openFolder($)} />
+          </Box>
         </Box>
         <Box key="branch" flexDirection="row" gap={1}>
           <Text color="magenta">{icons.branch}</Text>

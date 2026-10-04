@@ -3,10 +3,10 @@
 A [Claude Code mod](https://code.claude.com/docs/en/plugins/mods/overview) that shows how far your working tree has drifted from the last commit: the folder, the branch, how far it is ahead of or behind its upstream, and the uncommitted changes, above the prompt.
 
 ```
-❐ dotfiles   ⎇ main ↑2 ↓1   ± 4 files +83 -1
+❐ PickleBoxer/dotfiles   ⎇ main ↑2 ↓1   ± 4 files +83 -1
 ```
 
-- **Band above the prompt**: the repository's folder, the branch (or the commit when HEAD is detached), commits ahead and behind the upstream, and the changed files with lines added and removed. Untracked files count as added lines.
+- **Band above the prompt**: the repository as `owner/repo` from the `origin` remote (the folder name when there is none), the branch (or the commit when HEAD is detached), commits ahead and behind the upstream, and the changed files with lines added and removed. Untracked files count as added lines.
 - **Press a part of the band**: the folder opens in Finder, the branch opens the Branches tab, the changes open the Changes tab. Click it where your terminal reports clicks, or press `ctrl+x tab` to focus the band, then Tab and Enter.
 - **`/drift`**: a pane with two tabs. **Changes** (`c`) lists every changed file with its status and line counts, followed by the diff: every file stacked, or straight away the one file when only one changed. Pressing a file shows only its diff, **All files** (`a`) goes back. **Branches** (`b`) lists local branches with their upstream, ahead and behind counts and last commit, and when you last fetched. `/drift branches` opens that tab directly. **Open in Finder** (`o`) and **Refresh** (`r`) are there too.
 - **Switching branches**: press a branch, then **Switch** (`y`) or **Cancel** (`n`). drift refuses while tracked files have uncommitted changes, and shows git's own error when the switch fails.
