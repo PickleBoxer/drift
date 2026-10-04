@@ -260,6 +260,7 @@ async function summary($: EngineInterface): Promise<string> {
 
 export const register: Register = (on, options) => {
   const icons = ICONS[options.terminalIcons === 'nerd' ? 'nerd' : 'plain']
+  const showOwner = options.showOwner !== false
 
   on('session.start', async ($, e, next) => {
     await $.command.register({
@@ -442,7 +443,7 @@ export const register: Register = (on, options) => {
         <Box key="folder" flexDirection="row" gap={1}>
           <Text color="cyan">{icons.folder}</Text>
           <Box flexDirection="row">
-            {repo.owner && !isCompact && <Text dimColor>{repo.owner}/</Text>}
+            {showOwner && repo.owner && !isCompact && <Text dimColor>{repo.owner}/</Text>}
             <Button key="folder" plain label={repo.name} onPress={() => void openFolder($)} />
           </Box>
         </Box>

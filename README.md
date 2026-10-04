@@ -2,6 +2,10 @@
 
 A [Claude Code mod](https://code.claude.com/docs/en/plugins/mods/overview) that shows how far your working tree has drifted from the last commit: the folder, the branch, how far it is ahead of or behind its upstream, and the uncommitted changes, above the prompt.
 
+![drift's band above the Claude Code prompt in the terminal, with Nerd Font icons](docs/terminal.png)
+
+With the default icons:
+
 ```
 ❐ PickleBoxer/dotfiles   ⎇ main ↑2 ↓1   ± 4 files +83 -1
 ```
@@ -37,6 +41,16 @@ Requires Claude Code v2.1.287 or later.
 {
   "pluginConfigs": {
     "drift@drift": { "terminalIcons": "nerd" }
+  }
+}
+```
+
+`showOwner` (default on) shows the owner before the repository name, as `owner/repo`. Turn it off to show the repository name alone:
+
+```json
+{
+  "pluginConfigs": {
+    "drift@drift": { "showOwner": false }
   }
 }
 ```

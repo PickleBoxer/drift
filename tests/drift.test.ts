@@ -187,6 +187,15 @@ describe('band', () => {
     expect(await ui.find({ type: 'Button', text: 'dotfiles' })).toBeDefined()
   })
 
+  test('hides the owner when asked', { options: { showOwner: false } }, async ($, on) => {
+    seed(on, { remote: 'git@github.com:PickleBoxer/dotfiles.git' })
+    await start($)
+    const ui = await $.ui.mount({ plugin: 'drift', surface: 'terminal', component: 'AbovePrompt', props: BAND })
+
+    expect(await ui.find({ type: 'Text', text: 'PickleBoxer/' })).toBeUndefined()
+    expect(await ui.find({ type: 'Button', text: 'dotfiles' })).toBeDefined()
+  })
+
   test('draws Nerd Font icons when asked', { options: { terminalIcons: 'nerd' } }, async ($, on) => {
     seed(on)
     await start($)

@@ -19,6 +19,12 @@
         "nerd"
       ],
       "default": "plain"
+    },
+    "showOwner": {
+      "type": "boolean",
+      "title": "Show owner",
+      "description": "Show the owner before the repository name, as owner/repo from the origin remote. Off shows the repository name alone.",
+      "default": true
     }
   }
 }
