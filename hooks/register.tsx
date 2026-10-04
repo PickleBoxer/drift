@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Repo, Tab } from '../types'
+import type { FileChange, Repo, Tab } from '../types'
 import { BRANCH_FORMAT, basename, countLines, parseBranches, parseNumstat, parseStatus, since, totals, withCounts } from './git'
 
 const PANE = 'drift'
@@ -9,7 +9,7 @@ const TICK_MS = 5000
 // Untracked files counted line by line, and the largest one read
 const MAX_UNTRACKED = 200
 const MAX_UNTRACKED_BYTES = 1024 * 1024
-const MAX_DIFF_LINES = 400
+const MAX_DIFF_LINES = 1000
 // Tools that can change the working tree or move HEAD
 const WRITERS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit', 'Bash'])
 
@@ -114,8 +114,16 @@ async function refresh($: EngineInterface): Promise<void> {
   isRefreshing = true
 
   try {
+    const before = await read($, repoAtom)
     const repo = await loadRepo($)
     await update($, repoAtom, () => repo)
+
+    // Keep a diff on screen current, without rereading it when nothing changed
+    if ((await read($, diffAtom)) !== null && JSON.stringify(before?.files) !== JSON.stringify(repo?.files)) {
+      const selected = await read($, selectedAtom)
+      const isGone = selected !== null && !repo?.files.some(file => file.path === selected)
+      await (selected === null || isGone ? loadAllDiffs($) : loadDiff($, selected))
+    }
   } finally {
     isRefreshing = false
   }
@@ -128,25 +136,51 @@ async function loadBranches($: EngineInterface): Promise<void> {
   await update($, branchesAtom, () => (output?.ok ? parseBranches(output.stdout) : []))
 }
 
-async function showDiff($: EngineInterface, path: string): Promise<void> {
-  const repo = await read($, repoAtom)
-  const file = repo?.files.find(one => one.path === path)
-
-  if (!repo || !file) {
-    return
+function diffColor(line: string): string | undefined {
+  if (line.startsWith('+++') || line.startsWith('---')) {
+    return undefined
   }
 
-  await update($, selectedAtom, () => path)
+  return line.startsWith('+') ? 'green' : line.startsWith('-') ? 'red' : line.startsWith('@@') ? 'cyan' : undefined
+}
 
+async function fileDiff($: EngineInterface, repo: Repo, file: FileChange): Promise<string> {
   const base = repo.commit ? ['HEAD'] : ['--cached']
   const args =
     file.state === 'untracked'
-      ? ['diff', '--no-color', '--no-index', '--', '/dev/null', path]
-      : ['diff', '--no-color', ...base, '--', ...(file.from ? [file.from] : []), path]
+      ? ['diff', '--no-color', '--no-index', '--', '/dev/null', file.path]
+      : ['diff', '--no-color', ...base, '--', ...(file.from ? [file.from] : []), file.path]
   // --no-index exits 1 when the files differ, so read the output either way
   const { stdout, stderr } = await git($, repo.root, args)
 
-  await update($, diffAtom, () => stdout || stderr || 'No textual changes.')
+  return stdout || stderr
+}
+
+// One file's diff, or with no path every file's, stacked in the order of the list
+async function loadDiff($: EngineInterface, path: string | null): Promise<void> {
+  const repo = await read($, repoAtom)
+
+  if (!repo) {
+    return
+  }
+
+  const files = path === null ? repo.files.slice(0, MAX_UNTRACKED) : repo.files.filter(file => file.path === path)
+  const parts: string[] = []
+
+  for (const file of files) {
+    parts.push(await fileDiff($, repo, file))
+  }
+
+  await update($, selectedAtom, () => path)
+  await update($, diffAtom, () => parts.join('').trimEnd() || 'No textual changes.')
+}
+
+// What the Changes tab opens on: the single changed file, or all of them
+async function loadAllDiffs($: EngineInterface): Promise<void> {
+  const repo = await read($, repoAtom)
+  const only = repo?.files.length === 1 ? (repo.files[0]?.path ?? null) : null
+
+  await loadDiff($, only)
 }
 
 async function openPane($: EngineInterface, tab: Tab): Promise<void> {
@@ -155,6 +189,8 @@ async function openPane($: EngineInterface, tab: Tab): Promise<void> {
 
   if (tab === 'branches') {
     await loadBranches($)
+  } else {
+    await loadAllDiffs($)
   }
 
   await $.ui.open({ id: PANE, title: 'drift', closeOnEscape: true, focus: true })
@@ -275,7 +311,7 @@ export const register: Register = (on, options) => {
           label={`Changes (${repo.files.length})`}
           hotkey="c"
           variant={tab === 'changes' ? 'primary' : undefined}
-          onPress={() => void update($, tabAtom, () => 'changes')}
+          onPress={() => void openPane($, 'changes')}
         />
         <Button
           key="tab-branches"
@@ -332,8 +368,9 @@ export const register: Register = (on, options) => {
     }
 
     const selected = await read($, selectedAtom)
-    const diff = selected ? await read($, diffAtom) : null
-    const lines = (diff ?? '').split('\n').slice(0, MAX_DIFF_LINES)
+    const diff = await read($, diffAtom)
+    const all = (diff ?? '').split('\n')
+    const lines = all.slice(0, MAX_DIFF_LINES)
 
     return (
       <Box flexDirection="column" gap={1}>
@@ -348,7 +385,7 @@ export const register: Register = (on, options) => {
                 plain
                 label={file.from ? `${file.from} → ${file.path}` : file.path}
                 dimColor={selected !== null && selected !== file.path}
-                onPress={() => void showDiff($, file.path)}
+                onPress={() => void loadDiff($, file.path)}
               />
               {file.added === null ? (
                 <Text dimColor>binary</Text>
@@ -361,18 +398,23 @@ export const register: Register = (on, options) => {
             </Box>
           ))}
         </Box>
-        {diff && (
+        {selected !== null && repo.files.length > 1 && (
+          <Button key="all-files" label="All files" hotkey="a" onPress={() => void loadDiff($, null)} />
+        )}
+        {diff && repo.files.length > 0 && (
           <Box key="diff" flexDirection="column">
             {lines.map((line, index) => (
               <Text
                 key={`line-${index}`}
                 wrap="truncate"
-                color={line.startsWith('+') ? 'green' : line.startsWith('-') ? 'red' : line.startsWith('@@') ? 'cyan' : undefined}
-                dimColor={line.startsWith('diff ') || line.startsWith('index ')}
+                color={diffColor(line)}
+                bold={line.startsWith('diff ')}
+                dimColor={/^(index |new file|deleted file|similarity|rename |--- |\+\+\+ )/.test(line)}
               >
                 {line || ' '}
               </Text>
             ))}
+            {all.length > MAX_DIFF_LINES && <Text dimColor>{all.length - MAX_DIFF_LINES} more lines. Press a file to see only its diff.</Text>}
           </Box>
         )}
       </Box>
@@ -393,7 +435,7 @@ export const register: Register = (on, options) => {
     const count = repo.files.length
 
     return (
-      <Box flexDirection="row" gap={2}>
+      <Box flexDirection="row" gap={2} paddingLeft={1}>
         <Box key="folder" flexDirection="row" gap={1}>
           <Text color="cyan">{icons.folder}</Text>
           <Button key="folder" plain label={repo.name} onPress={() => void openFolder($)} />

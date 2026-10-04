@@ -8,7 +8,7 @@ A [Claude Code mod](https://code.claude.com/docs/en/plugins/mods/overview) that 
 
 - **Band above the prompt**: the repository's folder, the branch (or the commit when HEAD is detached), commits ahead and behind the upstream, and the changed files with lines added and removed. Untracked files count as added lines.
 - **Press a part of the band**: the folder opens in Finder, the branch opens the Branches tab, the changes open the Changes tab. Click it where your terminal reports clicks, or press `ctrl+x tab` to focus the band, then Tab and Enter.
-- **`/drift`**: a pane with two tabs. **Changes** (`c`) lists every changed file with its status and line counts, and pressing a file shows its diff. **Branches** (`b`) lists local branches with their upstream, ahead and behind counts and last commit, and when you last fetched. `/drift branches` opens that tab directly. **Open in Finder** (`o`) and **Refresh** (`r`) are there too.
+- **`/drift`**: a pane with two tabs. **Changes** (`c`) lists every changed file with its status and line counts, followed by the diff: every file stacked, or straight away the one file when only one changed. Pressing a file shows only its diff, **All files** (`a`) goes back. **Branches** (`b`) lists local branches with their upstream, ahead and behind counts and last commit, and when you last fetched. `/drift branches` opens that tab directly. **Open in Finder** (`o`) and **Refresh** (`r`) are there too.
 - **Switching branches**: press a branch, then **Switch** (`y`) or **Cancel** (`n`). drift refuses while tracked files have uncommitted changes, and shows git's own error when the switch fails.
 
 The Desktop app already shows the folder, branch and changes above the prompt, so drift draws no band there.

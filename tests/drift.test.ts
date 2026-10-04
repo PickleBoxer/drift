@@ -67,7 +67,9 @@ function seed(on: On, answers: Answers = {}): string[][] {
     }
 
     if (command === 'diff') {
-      return ok(argv.includes('--numstat') ? NUMSTAT : '+added line\n-removed line\n')
+      const path = argv[argv.length - 1]
+
+      return ok(argv.includes('--numstat') ? NUMSTAT : `diff --git a/${path} b/${path}\n+added ${path}\n-removed line\n`)
     }
 
     if (command === 'for-each-ref') {
@@ -220,7 +222,34 @@ describe('pane', () => {
     expect(await ui.find({ type: 'Button', text: 'hooks/old.ts → hooks/next.ts' })).toBeDefined()
     await ui.press({ key: 'file:README.md' })
 
-    expect(await ui.find({ type: 'Text', text: '+added line' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: '+added README.md' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: '+added notes.txt' })).toBeUndefined()
+    await ui.press({ key: 'all-files' })
+
+    expect(await ui.find({ type: 'Text', text: '+added notes.txt' })).toBeDefined()
+  })
+
+  test('opens on every diff stacked when several files changed', async ($, on) => {
+    seed(on)
+    await start($)
+    await $.command.run({ command: 'drift', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 120 } })
+    const ui = await $.ui.mount({ plugin: 'drift', surface: 'terminal', component: 'Pane', requestId: 'drift', props: PANE })
+
+    for (const path of ['README.md', 'bin/new tool', 'hooks/next.ts', 'notes.txt']) {
+      expect(await ui.find({ type: 'Text', text: `+added ${path}` })).toBeDefined()
+    }
+
+    expect(await ui.find({ key: 'all-files' })).toBeUndefined()
+  })
+
+  test('opens on the diff of a single changed file', async ($, on) => {
+    seed(on, { status: '# branch.oid abc1234\0# branch.head main\0? notes.txt\0' })
+    await start($)
+    await $.command.run({ command: 'drift', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 120 } })
+    const ui = await $.ui.mount({ plugin: 'drift', surface: 'terminal', component: 'Pane', requestId: 'drift', props: PANE })
+
+    expect(await ui.find({ type: 'Text', text: '+added notes.txt' })).toBeDefined()
+    expect(await ui.find({ key: 'all-files' })).toBeUndefined()
   })
 
   test('refuses to switch branches with uncommitted changes', async ($, on) => {
