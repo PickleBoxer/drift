@@ -437,30 +437,34 @@ export const register: Register = (on, options) => {
     const isCompact = e.props.bodyColumns < 80
     const head = repo.branch ?? repo.commit ?? 'no commits'
     const count = repo.files.length
+    const below = await next(e)
 
     return (
-      <Box flexDirection="row" gap={2} paddingLeft={1}>
-        <Box key="folder" flexDirection="row" gap={1}>
-          <Text color="cyan">{icons.folder}</Text>
-          <Box flexDirection="row">
-            {showOwner && repo.owner && !isCompact && <Text dimColor>{repo.owner}/</Text>}
-            <Button key="folder" plain label={repo.name} onPress={() => void openFolder($)} />
+      <Box flexDirection="column">
+        <Box flexDirection="row" gap={2} paddingLeft={1}>
+          <Box key="folder" flexDirection="row" gap={1}>
+            <Text color="cyan">{icons.folder}</Text>
+            <Box flexDirection="row">
+              {showOwner && repo.owner && !isCompact && <Text dimColor>{repo.owner}/</Text>}
+              <Button key="folder" plain label={repo.name} onPress={() => void openFolder($)} />
+            </Box>
           </Box>
-        </Box>
-        <Box key="branch" flexDirection="row" gap={1}>
-          <Text color="magenta">{icons.branch}</Text>
-          <Button key="branch" plain label={head} onPress={() => void openPane($, 'branches')} />
-          {repo.ahead > 0 && <Text color="green">↑{repo.ahead}</Text>}
-          {repo.behind > 0 && <Text color="yellow">↓{repo.behind}</Text>}
-        </Box>
-        {count > 0 && (
-          <Box key="diff" flexDirection="row" gap={1}>
-            <Text color="yellow">{icons.diff}</Text>
-            <Button key="diff" plain label={isCompact ? `${count}` : `${count} file${count === 1 ? '' : 's'}`} onPress={() => void openPane($, 'changes')} />
-            <Text color="green">+{repo.added}</Text>
-            <Text color="red">-{repo.deleted}</Text>
+          <Box key="branch" flexDirection="row" gap={1}>
+            <Text color="magenta">{icons.branch}</Text>
+            <Button key="branch" plain label={head} onPress={() => void openPane($, 'branches')} />
+            {repo.ahead > 0 && <Text color="green">↑{repo.ahead}</Text>}
+            {repo.behind > 0 && <Text color="yellow">↓{repo.behind}</Text>}
           </Box>
-        )}
+          {count > 0 && (
+            <Box key="diff" flexDirection="row" gap={1}>
+              <Text color="yellow">{icons.diff}</Text>
+              <Button key="diff" plain label={isCompact ? `${count}` : `${count} file${count === 1 ? '' : 's'}`} onPress={() => void openPane($, 'changes')} />
+              <Text color="green">+{repo.added}</Text>
+              <Text color="red">-{repo.deleted}</Text>
+            </Box>
+          )}
+        </Box>
+        {below}
       </Box>
     )
   })
