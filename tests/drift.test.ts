@@ -39,6 +39,7 @@ function seed(on: On, answers: Answers = {}): string[][] {
   const isRepo = answers.isRepo ?? true
 
   mock.clock(on, { now: NOW })
+  engineDraws(on)
   on('session.start', async (_$, e) => ({ cwd: e.cwd }))
   on('command.register', async () => ({ value: { command: 'drift' } }))
   on('session.cwd', async () => ({ value: ROOT }))
@@ -216,7 +217,6 @@ describe('band', () => {
 
   test('draws nothing outside a repository', async ($, on) => {
     seed(on, { isRepo: false })
-    engineDraws(on)
     await start($)
     const terminal = await $.ui.mount({ plugin: 'drift', surface: 'terminal', component: 'AbovePrompt', props: BAND })
 
@@ -226,12 +226,20 @@ describe('band', () => {
 
   test('the desktop app keeps its own header', async ($, on) => {
     seed(on)
-    engineDraws(on)
     await start($)
     const desktop = await $.ui.mount({ plugin: 'drift', surface: 'desktop', component: 'AbovePrompt', props: BAND })
 
     expect(await desktop.find({ key: 'folder' })).toBeUndefined()
     expect(await desktop.find({ type: 'Text', text: 'engine' })).toBeDefined()
+  })
+
+  test('stacks what is drawn beneath it below the bar', async ($, on) => {
+    seed(on)
+    await start($)
+    const ui = await $.ui.mount({ plugin: 'drift', surface: 'terminal', component: 'AbovePrompt', props: BAND })
+
+    expect(await ui.find({ key: 'folder' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: 'engine' })).toBeDefined()
   })
 
   test('the folder opens in Finder', async ($, on) => {
