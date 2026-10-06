@@ -22,8 +22,8 @@ The Desktop app already shows the folder, branch and changes above the prompt, s
 Requires Claude Code v2.1.287 or later.
 
 ```
-/plugin marketplace add PickleBoxer/drift
-/plugin install drift@drift
+/plugin marketplace add PickleBoxer/claude-plugins
+/plugin install drift@pickleboxer
 ```
 
 ## Where the numbers come from
@@ -40,7 +40,7 @@ Requires Claude Code v2.1.287 or later.
 ```json
 {
   "pluginConfigs": {
-    "drift@drift": { "terminalIcons": "nerd" }
+    "drift@pickleboxer": { "terminalIcons": "nerd" }
   }
 }
 ```
@@ -50,7 +50,7 @@ Requires Claude Code v2.1.287 or later.
 ```json
 {
   "pluginConfigs": {
-    "drift@drift": { "showOwner": false }
+    "drift@pickleboxer": { "showOwner": false }
   }
 }
 ```
